@@ -1,0 +1,476 @@
+
+
+骰子輪盤· HTML
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>骰子 & 懲罰轉盤</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Huninn&family=Noto+Sans+TC:wght@400;700;900&display=swap" rel="stylesheet">
+<style>
+:root{
+  --felt:#0F4C45; --felt-deep:#0A3631; --paper:#FFF8E7; --ink:#1D2B2A;
+  --mustard:#F2B705; --cherry:#E2453C; --sky:#3FA7D6; --plum:#8E5BB5; --mint:#59C3A0;
+  --muted:#6B7A78; --line:#E6DCC4;
+  --bg:var(--felt); --card:var(--paper); --text:var(--ink);
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#082A26; --card:#1E2826; --text:#F3EAD3; --line:#34413E; --muted:#9FB0AD;
+  }
+}
+:root[data-theme="dark"]{ --bg:#082A26; --card:#1E2826; --text:#F3EAD3; --line:#34413E; --muted:#9FB0AD; }
+*,*::before,*::after{box-sizing:inherit}
+html,body{margin:0}
+body{
+  background:var(--bg);
+  background-image:radial-gradient(circle at 50% 0%, rgba(255,255,255,.07), transparent 60%);
+  color:var(--text);
+  font-family:"Noto Sans TC","PingFang TC","Microsoft JhengHei",system-ui,sans-serif;
+  min-height:100vh; line-height:1.6;
+}
+.wrap{max-width:1040px;margin:0 auto;padding:24px 16px 48px}
+header{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:20px}
+h1{
+  font-family:"Huninn","Noto Sans TC",sans-serif;font-weight:400;
+  color:var(--paper);font-size:clamp(28px,5vw,44px);margin:0;line-height:1.15;
+  text-shadow:3px 3px 0 var(--felt-deep);
+}
+.tabs{display:flex;background:rgba(0,0,0,.25);border-radius:999px;padding:4px}
+.tabs button{
+  font:inherit;font-weight:700;border:0;background:transparent;color:var(--paper);
+  padding:10px 22px;border-radius:999px;cursor:pointer;font-size:16px
+}
+.tabs button[aria-selected="true"]{background:var(--mustard);color:var(--ink)}
+button:focus-visible,input:focus-visible,textarea:focus-visible{outline:3px solid var(--sky);outline-offset:2px}
+ 
+.panel{display:none}
+.panel.active{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);gap:20px}
+@media (max-width:820px){.panel.active{grid-template-columns:1fr}}
+ 
+.stage{
+  background:var(--felt-deep);border-radius:28px;padding:24px;
+  box-shadow:inset 0 0 0 6px rgba(255,255,255,.06), inset 0 10px 40px rgba(0,0,0,.4);
+  display:flex;flex-direction:column;align-items:center;gap:20px;min-height:420px;justify-content:center
+}
+.side{background:var(--card);border-radius:20px;padding:20px;border:2px solid var(--line)}
+.side h2{font-family:"Huninn","Noto Sans TC",sans-serif;font-weight:400;font-size:22px;margin:0 0 4px}
+.hint{color:var(--muted);font-size:14px;margin:0 0 14px}
+ 
+.big-btn{
+  font:inherit;font-weight:900;font-size:20px;border:0;cursor:pointer;
+  background:var(--cherry);color:#fff;padding:14px 40px;border-radius:16px;
+  box-shadow:0 6px 0 #9E2A23;transition:transform .08s, box-shadow .08s
+}
+.big-btn:active{transform:translateY(4px);box-shadow:0 2px 0 #9E2A23}
+.big-btn:disabled{opacity:.6;cursor:wait}
+.small-btn{
+  font:inherit;font-size:14px;font-weight:700;border:2px solid var(--line);background:transparent;color:var(--text);
+  padding:6px 12px;border-radius:10px;cursor:pointer
+}
+.small-btn:hover{border-color:var(--mustard)}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+ 
+/* Dice */
+.dice-tray{display:flex;flex-wrap:wrap;gap:18px;justify-content:center}
+.die-wrap{display:flex;flex-direction:column;align-items:center;gap:8px}
+.die{
+  width:130px;height:130px;border-radius:24px;background:var(--paper);color:var(--ink);
+  display:flex;align-items:center;justify-content:center;text-align:center;padding:10px;
+  font-family:"Huninn","Noto Sans TC",sans-serif;font-size:22px;line-height:1.25;word-break:break-word;
+  box-shadow:0 8px 0 #CFC3A6, 0 16px 24px rgba(0,0,0,.35)
+}
+.die.big{font-size:56px}
+.die-name{color:var(--paper);font-size:14px;opacity:.8}
+.die.rolling{animation:shake .12s linear infinite}
+@keyframes shake{
+  0%{transform:rotate(-8deg) translateY(-4px)} 50%{transform:rotate(8deg) translateY(2px)} 100%{transform:rotate(-8deg) translateY(-4px)}
+}
+.pips{display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(3,1fr);width:84px;height:84px}
+.pip{width:18px;height:18px;border-radius:50%;background:var(--ink);place-self:center}
+.pip.red{background:var(--cherry)}
+.total{color:var(--paper);font-size:18px;min-height:1.6em}
+ 
+.die-editor{border:2px dashed var(--line);border-radius:14px;padding:12px;margin-bottom:12px}
+.die-editor .row{justify-content:space-between;margin-bottom:8px}
+.die-editor input{
+  font:inherit;font-weight:700;border:0;border-bottom:2px solid var(--line);background:transparent;color:var(--text);
+  padding:4px 2px;width:60%
+}
+textarea{
+  width:100%;font:inherit;font-size:15px;border:2px solid var(--line);border-radius:10px;padding:8px 10px;
+  background:transparent;color:var(--text);resize:vertical;min-height:110px
+}
+.history{margin-top:16px;font-size:14px;color:var(--muted);max-height:140px;overflow:auto}
+.history div{padding:3px 0;border-bottom:1px solid var(--line)}
+ 
+/* Wheel */
+.wheel-box{position:relative;width:min(420px,100%);aspect-ratio:1}
+#wheel{width:100%;height:100%;display:block;border-radius:50%;box-shadow:0 0 0 10px var(--paper),0 0 0 14px var(--mustard),0 20px 40px rgba(0,0,0,.45)}
+.pointer{
+  position:absolute;left:50%;top:-22px;transform:translateX(-50%);width:0;height:0;
+  border-left:20px solid transparent;border-right:20px solid transparent;border-top:44px solid var(--cherry);
+  filter:drop-shadow(0 3px 2px rgba(0,0,0,.4));z-index:2
+}
+.hub{
+  position:absolute;inset:0;margin:auto;width:70px;height:70px;border-radius:50%;
+  background:var(--paper);border:6px solid var(--mustard);display:flex;align-items:center;justify-content:center;
+  font-family:"Huninn",sans-serif;color:var(--ink);font-size:15px
+}
+.opt-list{list-style:none;margin:0 0 12px;padding:0;max-height:300px;overflow:auto}
+.opt-list li{display:flex;gap:8px;align-items:center;padding:4px 0}
+.swatch{width:14px;height:14px;border-radius:4px;flex:none}
+.opt-list input{
+  flex:1;font:inherit;border:0;border-bottom:2px solid var(--line);background:transparent;color:var(--text);padding:4px 2px;min-width:0
+}
+.del{border:0;background:transparent;color:var(--muted);font-size:20px;cursor:pointer;line-height:1;padding:4px 8px;border-radius:8px}
+.del:hover{color:var(--cherry)}
+label.check{display:flex;gap:8px;align-items:center;font-size:15px;margin:10px 0;cursor:pointer}
+ 
+/* Result modal */
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.55);display:none;align-items:center;justify-content:center;padding:20px;z-index:10}
+.modal.show{display:flex}
+.modal-card{
+  background:var(--paper);color:var(--ink);border-radius:24px;padding:28px 32px;text-align:center;max-width:420px;width:100%;
+  box-shadow:0 10px 0 var(--mustard);animation:pop .35s cubic-bezier(.2,1.6,.4,1)
+}
+.modal-card p{margin:0;color:#6B7A78}
+.modal-card .res{font-family:"Huninn","Noto Sans TC",sans-serif;font-size:clamp(28px,7vw,40px);margin:10px 0 20px;line-height:1.3;word-break:break-word}
+@keyframes pop{from{transform:scale(.6);opacity:0}to{transform:scale(1);opacity:1}}
+@media (prefers-reduced-motion:reduce){.die.rolling,.modal-card{animation:none}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>今晚誰倒楣？</h1>
+    <div class="tabs" role="tablist">
+      <button role="tab" aria-selected="true" data-tab="dice">🎲 骰子</button>
+      <button role="tab" aria-selected="false" data-tab="wheel">🎡 懲罰轉盤</button>
+    </div>
+  </header>
+ 
+  <!-- DICE -->
+  <section class="panel active" id="panel-dice">
+    <div class="stage">
+      <div class="dice-tray" id="diceTray"></div>
+      <div class="total" id="diceTotal"></div>
+      <button class="big-btn" id="rollBtn">擲骰子</button>
+    </div>
+    <div class="side">
+      <h2>設定骰子</h2>
+      <p class="hint">每行一個面，可以寫數字、文字或 emoji。</p>
+      <div id="diceEditors"></div>
+      <div class="row">
+        <button class="small-btn" id="addDie">＋ 新增骰子</button>
+        <button class="small-btn" data-preset="number">數字骰</button>
+        <button class="small-btn" data-preset="truth">真心話大冒險</button>
+        <button class="small-btn" data-preset="action">動作＋部位</button>
+      </div>
+      <div class="history" id="diceHistory"></div>
+    </div>
+  </section>
+ 
+  <!-- WHEEL -->
+  <section class="panel" id="panel-wheel">
+    <div class="stage">
+      <div class="wheel-box">
+        <div class="pointer"></div>
+        <canvas id="wheel"></canvas>
+        <div class="hub">轉！</div>
+      </div>
+      <button class="big-btn" id="spinBtn">轉動轉盤</button>
+    </div>
+    <div class="side">
+      <h2>懲罰選項</h2>
+      <p class="hint">直接點文字修改，按 Enter 新增下一項。</p>
+      <ul class="opt-list" id="optList"></ul>
+      <div class="row">
+        <button class="small-btn" id="addOpt">＋ 新增選項</button>
+        <button class="small-btn" id="shuffleOpt">打亂順序</button>
+        <button class="small-btn" id="resetOpt">還原預設</button>
+      </div>
+      <label class="check"><input type="checkbox" id="removeAfter"> 抽中後從轉盤移除</label>
+      <label class="check"><input type="checkbox" id="soundOn" checked> 轉動音效</label>
+      <div class="history" id="wheelHistory"></div>
+    </div>
+  </section>
+</div>
+ 
+<div class="modal" id="modal" role="dialog" aria-modal="true">
+  <div class="modal-card">
+    <p id="modalLabel">結果是</p>
+    <div class="res" id="modalRes"></div>
+    <button class="big-btn" id="modalClose">好啦</button>
+  </div>
+</div>
+ 
+<script>
+(() => {
+  const COLORS = ['#E2453C','#F2B705','#3FA7D6','#59C3A0','#8E5BB5','#F28C38','#E86A92','#2E8B57'];
+  const store = {
+    get(k, d){ try{ const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; }catch(e){ return d; } },
+    set(k, v){ try{ localStorage.setItem(k, JSON.stringify(v)); }catch(e){} }
+  };
+ 
+  /* ---------- Tabs ---------- */
+  document.querySelectorAll('.tabs button').forEach(b => b.addEventListener('click', () => {
+    document.querySelectorAll('.tabs button').forEach(x => x.setAttribute('aria-selected', x === b));
+    document.querySelectorAll('.panel').forEach(p => p.classList.toggle('active', p.id === 'panel-' + b.dataset.tab));
+    if (b.dataset.tab === 'wheel') drawWheel();
+  }));
+ 
+  /* ---------- Modal ---------- */
+  const modal = document.getElementById('modal');
+  function showResult(label, text){
+    document.getElementById('modalLabel').textContent = label;
+    document.getElementById('modalRes').textContent = text;
+    modal.classList.add('show');
+    document.getElementById('modalClose').focus();
+  }
+  document.getElementById('modalClose').onclick = () => modal.classList.remove('show');
+  modal.addEventListener('click', e => { if (e.target === modal) modal.classList.remove('show'); });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') modal.classList.remove('show'); });
+ 
+  /* ---------- Dice ---------- */
+  const PRESETS = {
+    number: [{name:'骰子 1', faces:['1','2','3','4','5','6']},{name:'骰子 2', faces:['1','2','3','4','5','6']}],
+    truth: [{name:'真心話 / 大冒險', faces:['真心話','大冒險','真心話','大冒險','指定別人','跳過一次']}],
+    action: [
+      {name:'動作', faces:['親','摸','捏','拍','聞','抱']},
+      {name:'部位', faces:['手','臉頰','頭','肩膀','耳朵','鼻子']}
+    ]
+  };
+  let dice = store.get('dice-config', PRESETS.number);
+  let diceHist = [];
+  const tray = document.getElementById('diceTray');
+  const editors = document.getElementById('diceEditors');
+  const PIP_MAP = {1:[4],2:[0,8],3:[0,4,8],4:[0,2,6,8],5:[0,2,4,6,8],6:[0,2,3,5,6,8]};
+ 
+  function renderFace(el, val){
+    el.classList.remove('big');
+    el.innerHTML = '';
+    if (/^[1-6]$/.test(val)) {
+      const g = document.createElement('div'); g.className = 'pips';
+      for (let i=0;i<9;i++){
+        const c = document.createElement('div');
+        if (PIP_MAP[val].includes(i)) { c.className = 'pip' + (val==='1' ? ' red' : ''); }
+        g.appendChild(c);
+      }
+      el.appendChild(g);
+    } else {
+      if ([...val].length <= 3) el.classList.add('big');
+      el.textContent = val;
+    }
+  }
+  function cleanFaces(d){ return d.faces.map(s=>s.trim()).filter(Boolean); }
+ 
+  function renderTray(){
+    tray.innerHTML = '';
+    dice.forEach((d,i) => {
+      const w = document.createElement('div'); w.className = 'die-wrap';
+      const el = document.createElement('div'); el.className = 'die'; el.id = 'die-'+i;
+      const f = cleanFaces(d);
+      renderFace(el, f[0] || '?');
+      const n = document.createElement('div'); n.className = 'die-name'; n.textContent = d.name;
+      w.append(el, n); tray.appendChild(w);
+    });
+    document.getElementById('diceTotal').textContent = '';
+  }
+ 
+  function renderEditors(){
+    editors.innerHTML = '';
+    dice.forEach((d,i) => {
+      const box = document.createElement('div'); box.className = 'die-editor';
+      const row = document.createElement('div'); row.className = 'row';
+      const name = document.createElement('input'); name.value = d.name; name.setAttribute('aria-label','骰子名稱');
+      name.oninput = () => { d.name = name.value; save(); const n = tray.children[i]?.querySelector('.die-name'); if(n) n.textContent = d.name; };
+      const del = document.createElement('button'); del.className = 'small-btn'; del.textContent = '刪除';
+      del.disabled = dice.length <= 1;
+      del.onclick = () => { dice.splice(i,1); save(); renderAll(); };
+      row.append(name, del);
+      const ta = document.createElement('textarea'); ta.value = d.faces.join('\n'); ta.setAttribute('aria-label', d.name + ' 的面');
+      ta.oninput = () => { d.faces = ta.value.split('\n'); save(); renderFace(document.getElementById('die-'+i), cleanFaces(d)[0] || '?'); };
+      box.append(row, ta); editors.appendChild(box);
+    });
+    document.getElementById('addDie').disabled = dice.length >= 6;
+  }
+  function save(){ store.set('dice-config', dice); }
+  function renderAll(){ renderTray(); renderEditors(); }
+ 
+  document.getElementById('addDie').onclick = () => {
+    dice.push({name:'骰子 '+(dice.length+1), faces:['1','2','3','4','5','6']}); save(); renderAll();
+  };
+  document.querySelectorAll('[data-preset]').forEach(b => b.onclick = () => {
+    dice = JSON.parse(JSON.stringify(PRESETS[b.dataset.preset])); save(); renderAll();
+  });
+ 
+  const rollBtn = document.getElementById('rollBtn');
+  rollBtn.onclick = () => {
+    const sets = dice.map(cleanFaces);
+    if (sets.some(s => s.length < 2)) { showResult('還不能擲','每顆骰子至少要有 2 個面'); return; }
+    rollBtn.disabled = true;
+    const els = dice.map((_,i) => document.getElementById('die-'+i));
+    els.forEach(e => e.classList.add('rolling'));
+    const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const timer = setInterval(() => els.forEach((e,i) => renderFace(e, sets[i][Math.floor(Math.random()*sets[i].length)])), 70);
+    setTimeout(() => {
+      clearInterval(timer);
+      const res = sets.map(s => s[Math.floor(Math.random()*s.length)]);
+      els.forEach((e,i) => { e.classList.remove('rolling'); renderFace(e, res[i]); });
+      const allNum = res.every(r => /^-?\d+(\.\d+)?$/.test(r));
+      document.getElementById('diceTotal').textContent = (allNum && res.length > 1)
+        ? '總和：' + res.reduce((a,b)=>a+Number(b),0)
+        : '';
+      diceHist.unshift(res.join('　'));
+      diceHist = diceHist.slice(0,20);
+      document.getElementById('diceHistory').innerHTML = diceHist.map(h => '<div></div>').join('');
+      [...document.getElementById('diceHistory').children].forEach((d,i)=> d.textContent = diceHist[i]);
+      rollBtn.disabled = false;
+    }, reduce ? 200 : 900);
+  };
+ 
+  /* ---------- Wheel ---------- */
+  const DEFAULT_OPTS = ['喝一杯','做 10 下深蹲','學動物叫','講一個冷笑話','跟左邊的人自拍','唱一段副歌','說出一個秘密','免罰一次'];
+  let opts = store.get('wheel-opts', DEFAULT_OPTS.slice());
+  let wheelHist = [];
+  const removeAfter = document.getElementById('removeAfter');
+  const soundOn = document.getElementById('soundOn');
+  removeAfter.checked = store.get('wheel-remove', false);
+  soundOn.checked = store.get('wheel-sound', true);
+  removeAfter.onchange = () => store.set('wheel-remove', removeAfter.checked);
+  soundOn.onchange = () => store.set('wheel-sound', soundOn.checked);
+ 
+  const canvas = document.getElementById('wheel');
+  const ctx = canvas.getContext('2d');
+  let rot = 0, spinning = false;
+  const list = document.getElementById('optList');
+ 
+  function validOpts(){ return opts.map(s=>s.trim()).filter(Boolean); }
+  function saveOpts(){ store.set('wheel-opts', opts); }
+ 
+  function renderList(focusIdx){
+    list.innerHTML = '';
+    opts.forEach((o,i) => {
+      const li = document.createElement('li');
+      const sw = document.createElement('span'); sw.className = 'swatch'; sw.style.background = COLORS[i % COLORS.length];
+      const inp = document.createElement('input'); inp.value = o; inp.placeholder = '輸入懲罰內容'; inp.setAttribute('aria-label','選項 '+(i+1));
+      inp.oninput = () => { opts[i] = inp.value; saveOpts(); drawWheel(); };
+      inp.onkeydown = e => { if (e.key === 'Enter'){ e.preventDefault(); opts.splice(i+1,0,''); saveOpts(); renderList(i+1); drawWheel(); } };
+      const del = document.createElement('button'); del.className = 'del'; del.textContent = '×'; del.setAttribute('aria-label','刪除這個選項');
+      del.onclick = () => { opts.splice(i,1); saveOpts(); renderList(); drawWheel(); };
+      li.append(sw, inp, del); list.appendChild(li);
+    });
+    if (focusIdx != null) list.querySelectorAll('input')[focusIdx]?.focus();
+  }
+ 
+  function drawWheel(){
+    const size = canvas.clientWidth; if (!size) return;
+    const dpr = window.devicePixelRatio || 1;
+    if (canvas.width !== Math.round(size*dpr)) { canvas.width = canvas.height = Math.round(size*dpr); }
+    ctx.setTransform(dpr,0,0,dpr,0,0);
+    const r = size/2, items = validOpts();
+    ctx.clearRect(0,0,size,size);
+    if (items.length === 0){
+      ctx.fillStyle = '#FFF8E7'; ctx.beginPath(); ctx.arc(r,r,r,0,Math.PI*2); ctx.fill();
+      ctx.fillStyle = '#6B7A78'; ctx.font = '16px "Noto Sans TC", sans-serif'; ctx.textAlign = 'center';
+      ctx.fillText('先在右邊新增選項', r, r - 50); return;
+    }
+    const seg = Math.PI*2/items.length;
+    // map valid items back to color index of their original slot for consistency
+    const colorIdx = []; opts.forEach((o,i)=>{ if (o.trim()) colorIdx.push(i); });
+    items.forEach((t,i) => {
+      const a0 = rot + i*seg - Math.PI/2;
+      ctx.beginPath(); ctx.moveTo(r,r); ctx.arc(r,r,r,a0,a0+seg); ctx.closePath();
+      ctx.fillStyle = COLORS[colorIdx[i] % COLORS.length]; ctx.fill();
+      ctx.strokeStyle = 'rgba(255,255,255,.7)'; ctx.lineWidth = 2; ctx.stroke();
+      ctx.save(); ctx.translate(r,r); ctx.rotate(a0 + seg/2);
+      ctx.fillStyle = '#fff'; ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
+      const fs = Math.max(11, Math.min(20, size/22, seg*r*0.45));
+      ctx.font = `700 ${fs}px "Noto Sans TC", sans-serif`;
+      ctx.shadowColor = 'rgba(0,0,0,.35)'; ctx.shadowBlur = 3;
+      let label = t; const maxW = r - 60;
+      while (ctx.measureText(label).width > maxW && label.length > 1) label = label.slice(0,-1);
+      if (label !== t) label = label.slice(0,-1) + '…';
+      ctx.fillText(label, r - 16, 0);
+      ctx.restore();
+    });
+  }
+ 
+  let audioCtx = null;
+  function tick(){
+    if (!soundOn.checked) return;
+    try{
+      audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+      const o = audioCtx.createOscillator(), g = audioCtx.createGain();
+      o.frequency.value = 900; o.type = 'square';
+      g.gain.setValueAtTime(0.06, audioCtx.currentTime);
+      g.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.04);
+      o.connect(g).connect(audioCtx.destination); o.start(); o.stop(audioCtx.currentTime + 0.05);
+    }catch(e){}
+  }
+ 
+  const spinBtn = document.getElementById('spinBtn');
+  function spin(){
+    if (spinning) return;
+    const items = validOpts();
+    if (items.length < 2){ showResult('還不能轉','轉盤至少要有 2 個選項'); return; }
+    spinning = true; spinBtn.disabled = true;
+    const n = items.length, seg = Math.PI*2/n, TAU = Math.PI*2;
+    const k = Math.floor(Math.random()*n);
+    const u = 0.15 + Math.random()*0.7;
+    const target = -(k+u)*seg;
+    const start = rot;
+    const delta = (((target - start) % TAU) + TAU) % TAU + TAU*6;
+    const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const dur = reduce ? 600 : 4800;
+    const t0 = performance.now();
+    let lastIdx = -1;
+    const ease = t => 1 - Math.pow(1-t, 4);
+    function frame(now){
+      const t = Math.min(1, (now - t0)/dur);
+      rot = start + delta*ease(t);
+      drawWheel();
+      const idx = Math.floor(((((-rot) % TAU) + TAU) % TAU) / seg);
+      if (idx !== lastIdx){ if (lastIdx !== -1) tick(); lastIdx = idx; }
+      if (t < 1) requestAnimationFrame(frame);
+      else {
+        rot = rot % TAU;
+        spinning = false; spinBtn.disabled = false;
+        const result = items[k];
+        wheelHist.unshift(result); wheelHist = wheelHist.slice(0,20);
+        const h = document.getElementById('wheelHistory'); h.innerHTML = '';
+        wheelHist.forEach(x => { const d = document.createElement('div'); d.textContent = x; h.appendChild(d); });
+        showResult('懲罰是', result);
+        if (removeAfter.checked){
+          const idxInOpts = opts.findIndex(o => o.trim() === result);
+          if (idxInOpts > -1){ opts.splice(idxInOpts,1); saveOpts(); renderList(); drawWheel(); }
+        }
+      }
+    }
+    requestAnimationFrame(frame);
+  }
+  spinBtn.onclick = spin;
+  document.querySelector('.hub').addEventListener('click', spin);
+  document.getElementById('addOpt').onclick = () => { opts.push(''); saveOpts(); renderList(opts.length-1); drawWheel(); };
+  document.getElementById('shuffleOpt').onclick = () => {
+    for (let i=opts.length-1;i>0;i--){ const j = Math.floor(Math.random()*(i+1)); [opts[i],opts[j]] = [opts[j],opts[i]]; }
+    saveOpts(); renderList(); drawWheel();
+  };
+  document.getElementById('resetOpt').onclick = () => { opts = DEFAULT_OPTS.slice(); saveOpts(); renderList(); drawWheel(); };
+  window.addEventListener('resize', drawWheel);
+ 
+  renderAll();
+  renderList();
+  if (document.fonts) document.fonts.ready.then(drawWheel);
+})();
+</script>
+</body>
+</html>
+ 
